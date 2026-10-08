@@ -1,0 +1,121 @@
+import pandas as pd
+
+# ============================================================
+# LOAD DATASET (DIRECT PATH)
+# ============================================================
+
+file_path = "iris.csv"      # Change to your dataset path
+
+df = pd.read_csv(file_path)
+
+# ============================================================
+# REMOVE RID COLUMN IF PRESENT
+# ============================================================
+
+if "RID" in df.columns:
+    df = df.drop("RID", axis=1)
+
+# Last column is assumed as target class
+target = df.columns[-1]
+
+# ============================================================
+# CONDITIONAL PROBABILITY FUNCTION
+# ============================================================
+
+def cond_prob(data, target, target_value, attribute, attribute_value):
+
+    subset = data[data[target] == target_value]
+
+    total = len(subset)
+
+    count = len(subset[subset[attribute] == attribute_value])
+
+    if count == 0:
+        unique = len(data[attribute].unique())
+        probability = (count + 1) / (total + unique)
+        print("Laplace Smoothing Applied")
+    else:
+        probability = count / total
+
+    print(
+        "P(",
+        attribute,
+        "=",
+        attribute_value,
+        "|",
+        target_value,
+        ") =",
+        probability,
+    )
+
+    return probability
+
+
+# ============================================================
+# TAKE SAMPLE INPUT
+# ============================================================
+
+sample = {}
+
+print("\nEnter values for prediction:\n")
+
+for column in df.columns[:-1]:
+    value = input("Enter " + column + ": ")
+    sample[column] = value
+
+print("\nSample Entered:")
+print(sample)
+
+# ============================================================
+# CALCULATE POSTERIOR PROBABILITIES
+# ============================================================
+
+mul_list = {}
+
+for target_value in df[target].unique():
+
+    print("\n====================================")
+    print("Calculating for Class =", target_value)
+
+    mul = 1
+
+    for attribute, value in sample.items():
+
+        probability = cond_prob(
+            df,
+            target,
+            target_value,
+            attribute,
+            value
+        )
+
+        mul = mul * probability
+
+    print("Likelihood =", mul)
+
+    class_count = len(df[df[target] == target_value])
+
+    prior_probability = class_count / len(df)
+
+    print("Prior Probability =", prior_probability)
+
+    posterior = prior_probability * mul
+
+    print("Posterior Probability =", posterior)
+
+    mul_list[target_value] = posterior
+
+# ============================================================
+# DISPLAY RESULTS
+# ============================================================
+
+print("\n====================================")
+print("Posterior Probabilities")
+print("====================================")
+
+for key, value in mul_list.items():
+    print(key, "=", value)
+
+prediction = max(mul_list, key=mul_list.get)
+
+print("\nPredicted Class =", prediction)

@@ -1,0 +1,131 @@
+import numpy as np
+import pandas as pd
+from collections import Counter
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder, StandardScaler
+
+
+# ============================================================
+# YOUR KNN CLASS (unchanged)
+# ============================================================
+class KNNClassifier:
+    def __init__(self, k=3, distance_metric='euclidean'):
+        self.k = k
+        self.distance_metric = distance_metric
+
+    def fit(self, X, y):
+        # KNN just memorizes the data
+        self.X_train = np.array(X)
+        self.y_train = np.array(y)
+
+    def _distance(self, x1, x2):
+        if self.distance_metric == 'euclidean':
+            return np.sqrt(np.sum((x1 - x2) ** 2))
+        elif self.distance_metric == 'manhattan':
+            return np.sum(np.abs(x1 - x2))
+
+    def _predict_one(self, x):
+        # Compute distance from x to every training point
+        distances = [self._distance(x, x_train) for x_train in self.X_train]
+
+        # Get indices of k nearest neighbors
+        k_indices = np.argsort(distances)[:self.k]
+        k_labels = self.y_train[k_indices]
+
+        # Majority vote
+        most_common = Counter(k_labels).most_common(1)
+        return most_common[0][0]
+
+    def predict(self, X):
+        return np.array([self._predict_one(x) for x in X])
+
+    def score(self, X, y):
+        predictions = self.predict(X)
+        return np.mean(predictions == y)
+
+
+# ============================================================
+# LOAD YOUR CSV FILE
+# ============================================================
+# 👉 Change 'your_data.csv' to your actual file name
+df = pd.read_csv('your_data.csv')
+
+print("Shape:", df.shape)
+print("Columns:", df.columns.tolist())
+print("\nFirst 5 rows:")
+print(df.head())
+print("\nMissing values:")
+print(df.isnull().sum())
+
+
+# ============================================================
+# SPLIT INTO X (features) and y (target)
+# ============================================================
+# 👉 Change 'target_column' to your label column name
+target_column = 'target_column'
+
+X = df.drop(columns=[target_column])
+y = df[target_column]
+
+# Drop rows with missing values (KNN can't handle NaN in distance calc)
+mask = ~X.isnull().any(axis=1) & ~y.isnull()
+X = X[mask]
+y = y[mask]
+
+# If target is text → convert to numbers
+if y.dtype == 'object':
+    le = LabelEncoder()
+    y = le.fit_transform(y)
+    print("\nLabel mapping:", dict(zip(le.classes_, le.transform(le.classes_))))
+
+# If any feature column is text → encode it
+for col in X.columns:
+    if X[col].dtype == 'object':
+        X[col] = LabelEncoder().fit_transform(X[col])
+
+X = X.values
+y = np.array(y)
+
+print("\nX shape:", X.shape, "| y shape:", y.shape)
+
+
+# ============================================================
+# TRAIN / TEST SPLIT
+# ============================================================
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)
+
+
+# ============================================================
+# SCALE FEATURES (important for KNN)
+# ============================================================
+scaler = StandardScaler()
+X_train = scaler.fit_transform(X_train)
+X_test = scaler.transform(X_test)
+
+
+# ============================================================
+# TRAIN AND TEST
+# ============================================================
+knn = KNNClassifier(k=5)
+knn.fit(X_train, y_train)
+print(f"\nKNN Accuracy (k=5): {knn.score(X_test, y_test):.4f}")
+
+
+# ============================================================
+# TRY DIFFERENT k VALUES
+# ============================================================
+print("\nAccuracy for different k values:")
+for k in [1, 3, 5, 7, 9, 11]:
+    model = KNNClassifier(k=k)
+    model.fit(X_train, y_train)
+    print(f"  k = {k:2d} -> accuracy = {model.score(X_test, y_test):.4f}")
+
+
+# ============================================================
+# PREDICT ON NEW SAMPLES
+# ============================================================
+preds = knn.predict(X_test[:5])
+print("\nFirst 5 predictions:", preds)
+print("First 5 true labels :", y_test[:5])

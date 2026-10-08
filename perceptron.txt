@@ -1,0 +1,193 @@
+import pandas as pd
+
+# ==========================================================
+# LOAD DATASET
+# ==========================================================
+
+file_path = input("Enter CSV File Path: ")
+
+df = pd.read_csv(file_path)
+
+print("\nAvailable Columns:")
+print(df.columns.tolist())
+
+target = input("\nEnter Target Column: ")
+
+# ==========================================================
+# FEATURES
+# ==========================================================
+
+features = []
+
+for col in df.columns:
+    if col != target:
+        features.append(col)
+
+# ==========================================================
+# CONVERT TO LIST
+# ==========================================================
+
+X = df[features].values.tolist()
+Y = df[target].tolist()
+
+# ==========================================================
+# INITIALIZE W AND B
+# ==========================================================
+
+num_features = len(features)
+
+weights = []
+
+for i in range(num_features):
+    weights.append(0.0)
+
+bias = 0.0
+
+alpha = float(input("Enter Learning Rate: "))
+epochs = int(input("Enter Epochs: "))
+
+# ==========================================================
+# TRAINING
+# ==========================================================
+
+for epoch in range(epochs):
+
+    misclassified = 0
+
+    for i in range(len(X)):
+
+        # =====================================
+        # COMPUTE Z
+        # =====================================
+
+        z = bias
+
+        for j in range(num_features):
+            z = z + weights[j] * X[i][j]
+
+        # =====================================
+        # STEP FUNCTION
+        # =====================================
+
+        if z >= 0:
+            y_hat = 1
+        else:
+            y_hat = -1
+
+        # =====================================
+        # CHECK CLASSIFICATION
+        # =====================================
+
+        if Y[i] != y_hat:
+
+            misclassified += 1
+
+            # ===============================
+            # UPDATE WEIGHTS
+            # wnew = wold + alpha*y*x
+            # ===============================
+
+            for j in range(num_features):
+
+                weights[j] = (
+                    weights[j]
+                    + alpha
+                    * Y[i]
+                    * X[i][j]
+                )
+
+            # ===============================
+            # UPDATE BIAS
+            # bnew = bold + alpha*y
+            # ===============================
+
+            bias = bias + alpha * Y[i]
+
+    print(
+        "Epoch:",
+        epoch + 1,
+        " Misclassified:",
+        misclassified
+    )
+
+    # =====================================
+    # CONVERGENCE CHECK
+    # =====================================
+
+    if misclassified == 0:
+
+        print("\nModel Converged")
+        break
+
+# ==========================================================
+# FINAL PARAMETERS
+# ==========================================================
+
+print("\nFinal Weights")
+
+for i in range(num_features):
+    print(features[i], "=", weights[i])
+
+print("\nBias =", bias)
+
+# ==========================================================
+# PREDICTION ON TRAINING DATA
+# ==========================================================
+
+correct = 0
+
+print("\nResults")
+
+for i in range(len(X)):
+
+    z = bias
+
+    for j in range(num_features):
+        z = z + weights[j] * X[i][j]
+
+    if z >= 0:
+        prediction = 1
+    else:
+        prediction = -1
+
+    print(
+        "Actual:",
+        Y[i],
+        " Predicted:",
+        prediction
+    )
+
+    if prediction == Y[i]:
+        correct += 1
+
+accuracy = (correct / len(X)) * 100
+
+print("\nAccuracy =", accuracy, "%")
+
+# ==========================================================
+# NEW SAMPLE PREDICTION
+# ==========================================================
+
+print("\nEnter New Sample")
+
+new_sample = []
+
+for feature in features:
+
+    value = float(
+        input("Enter " + feature + ": ")
+    )
+
+    new_sample.append(value)
+
+z = bias
+
+for j in range(num_features):
+    z = z + weights[j] * new_sample[j]
+
+if z >= 0:
+    result = 1
+else:
+    result = -1
+
+print("\nPredicted Class =", result)

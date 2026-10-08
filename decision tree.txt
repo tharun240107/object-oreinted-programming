@@ -1,0 +1,145 @@
+import pandas as pd
+import math
+
+# Read Dataset
+df = pd.read_csv(r"C:\Users\vedag\OneDrive\Documents\electronicstore.csv")
+
+if "RID" in df.columns:
+    df = df.drop("RID", axis=1)
+
+target = df.columns[-1]
+
+
+# ---------------- Helper Functions ----------------
+
+def class_counts(data):
+    counts = {}
+    for v in data[target]:
+        counts[v] = counts.get(v, 0) + 1
+    return counts
+
+
+def entropy(data):
+    total = len(data)
+    e = 0
+    for c in class_counts(data).values():
+        p = c / total
+        e -= p * math.log2(p)
+    return e
+
+
+def gini(data):
+    total = len(data)
+    g = 1
+    for c in class_counts(data).values():
+        p = c / total
+        g -= p * p
+    return g
+
+
+def split_info(data, attr):
+    total = len(data)
+    si = 0
+
+    for v in data[attr].unique():
+        p = len(data[data[attr] == v]) / total
+        si -= p * math.log2(p)
+
+    return si
+
+
+def majority_class(data):
+    return data[target].mode()[0]
+
+
+# ---------------- Split Measures ----------------
+
+def information_gain(data, attr):
+    total_entropy = entropy(data)
+
+    weighted = 0
+    for v in data[attr].unique():
+        subset = data[data[attr] == v]
+        weighted += (len(subset) / len(data)) * entropy(subset)
+
+    return total_entropy - weighted
+
+
+def gini_gain(data, attr):
+    total_gini = gini(data)
+
+    weighted = 0
+    for v in data[attr].unique():
+        subset = data[data[attr] == v]
+        weighted += (len(subset) / len(data)) * gini(subset)
+
+    return total_gini - weighted
+
+
+def gain_ratio(data, attr):
+    gain = information_gain(data, attr)
+    si = split_info(data, attr)
+
+    if si == 0:
+        return 0
+
+    return gain / si
+
+
+# ---------------- Generic Tree Builder ----------------
+
+def build_tree(data, attributes, criterion, name, level=0):
+
+    if len(data[target].unique()) == 1:
+        return data[target].iloc[0]
+
+    if len(attributes) == 0:
+        return majority_class(data)
+
+    best_attr = None
+    best_score = -1
+
+    for attr in attributes:
+        score = criterion(data, attr)
+
+        print("   " * level + attr, "=", round(score, 4))
+
+        if score > best_score:
+            best_score = score
+            best_attr = attr
+
+    print("   " * level + f"Best Attribute ({name}) :", best_attr)
+
+    tree = {best_attr: {}}
+
+    remaining = [a for a in attributes if a != best_attr]
+
+    for value in data[best_attr].unique():
+        subset = data[data[best_attr] == value]
+
+        tree[best_attr][value] = build_tree(
+            subset,
+            remaining,
+            criterion,
+            name,
+            level + 1
+        )
+
+    return tree
+
+
+# ---------------- Run Algorithms ----------------
+
+attributes = list(df.columns[:-1])
+
+print("\nID3 TREE")
+id3_tree = build_tree(df, attributes, information_gain, "Information Gain")
+print(id3_tree)
+
+print("\nCART TREE")
+cart_tree = build_tree(df, attributes, gini_gain, "Gini Gain")
+print(cart_tree)
+
+print("\nC4.5 TREE")
+c45_tree = build_tree(df, attributes, gain_ratio, "Gain Ratio")
+print(c45_tree)

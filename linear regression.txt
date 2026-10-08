@@ -1,0 +1,185 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+# ============================================================
+# LOAD DATASET
+# ============================================================
+
+file_path = input("Enter CSV file path: ")
+
+df = pd.read_csv(file_path)
+
+print("\nColumns in Dataset:")
+print(df.columns.tolist())
+
+feature = input("\nEnter Feature Column Name: ")
+target = input("Enter Target Column Name: ")
+
+# ============================================================
+# EXTRACT DATA
+# ============================================================
+
+x = df[feature].values
+y = df[target].values
+
+n = len(x)
+
+# ============================================================
+# CALCULATE THETA0 AND THETA1
+# Formula:
+# θ1 = (nΣxy - ΣxΣy)/(nΣx² - (Σx)²)
+# θ0 = (Σy - θ1Σx)/n
+# ============================================================
+
+sum_x = 0
+sum_y = 0
+sum_xy = 0
+sum_x2 = 0
+
+for i in range(n):
+    sum_x = sum_x + x[i]
+    sum_y = sum_y + y[i]
+    sum_xy = sum_xy + (x[i] * y[i])
+    sum_x2 = sum_x2 + (x[i] * x[i])
+
+theta1 = ((n * sum_xy) - (sum_x * sum_y)) / ((n * sum_x2) - (sum_x * sum_x))
+
+theta0 = (sum_y - (theta1 * sum_x)) / n
+
+print("\n==============================")
+print("Linear Regression Equation")
+print("==============================")
+
+print("Theta0 (Intercept) =", theta0)
+print("Theta1 (Slope)     =", theta1)
+
+print("\nEquation:")
+print("y =", theta0, "+", theta1, "* x")
+
+# ============================================================
+# PREDICTIONS
+# ============================================================
+
+pred = []
+
+for i in range(n):
+    value = theta0 + theta1 * x[i]
+    pred.append(value)
+
+pred = np.array(pred)
+
+# ============================================================
+# ACTUAL VS PREDICTED
+# ============================================================
+
+result = pd.DataFrame({
+    feature: x,
+    "Actual": y,
+    "Predicted": pred
+})
+
+print("\nActual vs Predicted:")
+print(result)
+
+# ============================================================
+# MAE
+# ============================================================
+
+absolute_error_sum = 0
+
+for i in range(n):
+    absolute_error_sum += abs(y[i] - pred[i])
+
+mae = absolute_error_sum / n
+
+# ============================================================
+# MSE
+# ============================================================
+
+squared_error_sum = 0
+
+for i in range(n):
+    error = y[i] - pred[i]
+    squared_error_sum += error * error
+
+mse = squared_error_sum / n
+
+# ============================================================
+# RMSE
+# ============================================================
+
+rmse = mse ** 0.5
+
+# ============================================================
+# R² SCORE
+# ============================================================
+
+mean_y = 0
+
+for value in y:
+    mean_y += value
+
+mean_y = mean_y / n
+
+ss_total = 0
+ss_residual = 0
+
+for i in range(n):
+
+    ss_total += (y[i] - mean_y) * (y[i] - mean_y)
+
+    ss_residual += (y[i] - pred[i]) * (y[i] - pred[i])
+
+r2 = 1 - (ss_residual / ss_total)
+
+# ============================================================
+# METRICS
+# ============================================================
+
+print("\n==============================")
+print("Evaluation Metrics")
+print("==============================")
+
+print("MAE  =", mae)
+print("MSE  =", mse)
+print("RMSE =", rmse)
+print("R²   =", r2)
+
+# ============================================================
+# USER PREDICTION
+# ============================================================
+
+print("\n==============================")
+print("Custom Prediction")
+print("==============================")
+
+new_x = float(input("Enter value of X: "))
+
+new_y = theta0 + theta1 * new_x
+
+print("Predicted Y =", new_y)
+
+# ============================================================
+# VISUALIZATION
+# ============================================================
+
+plt.figure(figsize=(8,5))
+
+plt.scatter(x, y, label="Original Data")
+
+plt.plot(
+    x,
+    pred,
+    label="Regression Line"
+)
+
+plt.xlabel(feature)
+plt.ylabel(target)
+
+plt.title("Linear Regression From Scratch")
+
+plt.legend()
+plt.grid(True)
+
+plt.show()

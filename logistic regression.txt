@@ -1,0 +1,170 @@
+import pandas as pd
+import math
+
+# ==========================================================
+# LOAD DATASET
+# ==========================================================
+
+file_path = input("Enter CSV File Path: ")
+
+df = pd.read_csv(file_path)
+
+print("\nColumns:")
+print(df.columns.tolist())
+
+target = input("\nEnter Target Column: ")
+
+features = []
+
+for col in df.columns:
+    if col != target:
+        features.append(col)
+
+# ==========================================================
+# CONVERT DATA TO LISTS
+# ==========================================================
+
+X = df[features].values.tolist()
+Y = df[target].tolist()
+
+# ==========================================================
+# INITIALIZE PARAMETERS
+# ==========================================================
+
+num_features = len(features)
+
+weights = []
+
+for i in range(num_features):
+    weights.append(0.0)
+
+bias = 0.0
+
+learning_rate = float(input("Learning Rate: "))
+epochs = int(input("Epochs: "))
+
+# ==========================================================
+# SIGMOID FUNCTION
+# ==========================================================
+
+def sigmoid(z):
+    return 1 / (1 + math.exp(-z))
+
+# ==========================================================
+# TRAINING
+# ==========================================================
+
+for epoch in range(epochs):
+
+    total_loss = 0
+
+    gradients_w = []
+
+    for j in range(num_features):
+        gradients_w.append(0)
+
+    gradient_b = 0
+
+    # ----------------------------------
+    # LOOP THROUGH EACH SAMPLE
+    # ----------------------------------
+
+    for i in range(len(X)):
+
+        z = bias
+
+        for j in range(num_features):
+            z += weights[j] * X[i][j]
+
+        y_pred = sigmoid(z)
+
+        # --------------------------
+        # LOSS
+        # --------------------------
+
+        loss = -(Y[i] * math.log(y_pred + 0.0000001) +
+                 (1 - Y[i]) * math.log(1 - y_pred + 0.0000001))
+
+        total_loss += loss
+
+        # --------------------------
+        # ERROR
+        # --------------------------
+
+        error = y_pred - Y[i]
+
+        # --------------------------
+        # WEIGHT GRADIENTS
+        # --------------------------
+
+        for j in range(num_features):
+            gradients_w[j] += error * X[i][j]
+
+        gradient_b += error
+
+    # ----------------------------------
+    # AVERAGE GRADIENTS
+    # ----------------------------------
+
+    m = len(X)
+
+    for j in range(num_features):
+        gradients_w[j] = gradients_w[j] / m
+
+    gradient_b = gradient_b / m
+
+    # ----------------------------------
+    # UPDATE PARAMETERS
+    # ----------------------------------
+
+    for j in range(num_features):
+        weights[j] = weights[j] - learning_rate * gradients_w[j]
+
+    bias = bias - learning_rate * gradient_b
+
+    average_loss = total_loss / m
+
+    if epoch % 100 == 0:
+        print("Epoch:", epoch,
+              " Loss:", round(average_loss, 6))
+
+# ==========================================================
+# FINAL PARAMETERS
+# ==========================================================
+
+print("\nWeights:")
+print(weights)
+
+print("\nBias:")
+print(bias)
+
+# ==========================================================
+# PREDICTIONS
+# ==========================================================
+
+correct = 0
+
+for i in range(len(X)):
+
+    z = bias
+
+    for j in range(num_features):
+        z += weights[j] * X[i][j]
+
+    probability = sigmoid(z)
+
+    if probability >= 0.5:
+        prediction = 1
+    else:
+        prediction = 0
+
+    if prediction == Y[i]:
+        correct += 1
+
+# ==========================================================
+# ACCURACY
+# ==========================================================
+
+accuracy = (correct / len(X)) * 100
+
+print("\nAccuracy:", round(accuracy, 2), "%")
